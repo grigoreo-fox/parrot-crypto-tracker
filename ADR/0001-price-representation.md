@@ -35,5 +35,5 @@ JavaScript `number` и SQLite `REAL` используют двоичную пл�
 ## Связи
 
 - [Архитектура](../ARCHITECTURE.md)
-- [Схема БД](../schema.sql)
+- [Схема БД](../src/database/migrations/001-initial.sql)
 - [PRD](../PRD.md)

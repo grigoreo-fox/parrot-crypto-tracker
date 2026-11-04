@@ -29,14 +29,13 @@ CREATE TABLE tracked_currencies (
 );
 
 -- Каждая строка — полученное нами наблюдение, не загруженная из CMC история.
--- Цена хранится как десятичная строка, чтобы SQLite REAL не округлял её при
--- сохранении. Приложение обязано проверять формат и неотрицательность цены;
--- числовые сравнения и агрегации по TEXT требуют отдельного решения.
+-- Цена хранится приближённо как REAL (см. ADR/0001-price-representation.md).
+-- Приложение проверяет, что цена является конечным неотрицательным числом.
 -- quote_currency фиксируется при получении цены, а не вычисляется из текущего ENV.
 CREATE TABLE prices (
     id                INTEGER PRIMARY KEY,
     cryptocurrency_id INTEGER NOT NULL REFERENCES cryptocurrencies(id) ON DELETE RESTRICT,
-    price             TEXT NOT NULL CHECK (length(trim(price)) > 0),
+    price             REAL NOT NULL CHECK (typeof(price) IN ('real', 'integer') AND price >= 0),
     quote_currency    TEXT NOT NULL CHECK (
         length(trim(quote_currency)) > 0 AND quote_currency = upper(trim(quote_currency))
     ),

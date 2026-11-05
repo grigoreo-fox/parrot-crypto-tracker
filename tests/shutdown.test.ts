@@ -36,6 +36,21 @@ describe('shutdown', () => {
     expect(process.exitCode).toBe(1);
   });
 
+  it('does not close the database when background work fails to stop within one second', async () => {
+    jest.useFakeTimers();
+    try {
+      const logger = makeLogger();
+      const database = { close: jest.fn() };
+      const shutdown = createShutdown(createServer(), database, logger, () => new Promise<void>(() => {}));
+      const stopped = shutdown();
+      await jest.advanceTimersByTimeAsync(1000);
+      await stopped;
+      expect(database.close).not.toHaveBeenCalled();
+      expect(logger.error).toHaveBeenCalledWith('Background shutdown timed out');
+      expect(process.exitCode).toBe(1);
+    } finally { jest.useRealTimers(); }
+  });
+
   it('reports database close errors', async () => {
     const logger = makeLogger();
     const database = { close: () => { throw new Error('database close failed'); } };

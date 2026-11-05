@@ -12,6 +12,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/src/server.js",
     "dev": "tsx watch src/server.ts",
+    "sync:catalog": "npm run build && node dist/src/sync-catalog-cli.js",
     "test": "npm run build && jest --runInBand"
   },
   "devDependencies": {

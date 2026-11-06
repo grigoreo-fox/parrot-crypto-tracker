@@ -72,7 +72,7 @@
 
 | Метод и путь | Назначение |
 |---|---|
-| `GET /v1/cryptocurrency/map?q=&start=&limit=` | Поиск в локальном каталоге |
+| `GET /v1/cryptocurrency/map?q=&start=&limit=` | План: поиск в локальном каталоге, пока не реализован |
 | `GET /v1/cryptocurrency/tracked?start=1&limit=100` | Список отслеживаемых валют |
 | `POST /v1/cryptocurrency/tracked` с телом `{ "id": ... }` | Добавление валюты |
 | `DELETE /v1/cryptocurrency/tracked?id=` | Удаление из отслеживания с сохранением истории |
@@ -80,7 +80,7 @@
 | `GET /v1/cryptocurrency/prices/latest?id=[]` или `?slug=[]` | Актуальные цены |
 | `GET /v1/cryptocurrency/prices/historical?id=[]` или `?slug=[]` с `time_start`, `time_end`, `count`, `cursor` | Собранная сервисом история цен |
 | `GET /health` | Мониторинг и Docker healthcheck |
-| `GET /` | Одностраничный UI: поиск, управление отслеживанием, текущие цены и история с графиком |
+| `GET /` | План: одностраничный UI, пока не реализован |
 
 **[Решение]** `id` — CMC ID; списки передаются через запятую (`?id=1,1027` или `?slug=bitcoin,ethereum`). Одновременно передавать `id` и `slug` нельзя; ошибка валидации — `400`.
 

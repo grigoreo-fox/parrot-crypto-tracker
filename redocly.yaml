@@ -1,0 +1,8 @@
+extends:
+  - recommended
+rules:
+  # Лицензия не объявлена; URL описывает локальный запуск, не production.
+  info-license: off
+  no-server-example.com: off
+  # Публичный GET /health не принимает параметры и не имеет сценария 4xx.
+  operation-4xx-response: off

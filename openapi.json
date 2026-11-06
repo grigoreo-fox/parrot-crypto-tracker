@@ -1,0 +1,119 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Parrot Crypto Tracker API",
+    "version": "0.1.0",
+    "description": "REST API для отслеживания криптовалют и чтения сохранённых цен. Данные поступают из CoinMarketCap в фоновых задачах; HTTP-запросы к CMC не обращаются."
+  },
+  "servers": [{ "url": "http://localhost:3000", "description": "Локальный сервер" }],
+  "security": [{ "BearerAuth": [] }],
+  "tags": [{ "name": "Health", "description": "Проверка доступности" }, { "name": "Tracking", "description": "Управление отслеживаемыми валютами" }, { "name": "Prices", "description": "Сохранённые цены и история" }],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"], "summary": "Проверка приложения и БД", "operationId": "getHealth", "security": [],
+        "responses": {
+          "200": { "description": "БД доступна", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthOk" } } } },
+          "503": { "description": "БД недоступна", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthError" } } } }
+        }
+      }
+    },
+    "/v1/cryptocurrency/tracked": {
+      "get": {
+        "tags": ["Tracking"], "summary": "Список отслеживаемых валют", "operationId": "listTracked",
+        "description": "Порядок по возрастанию CMC ID. В список и total входят приостановленные валюты.",
+        "parameters": [
+          { "name": "start", "in": "query", "description": "Позиция первой записи, начиная с 1.", "schema": { "type": "integer", "minimum": 1, "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 100 } }
+        ],
+        "responses": {
+          "200": { "description": "Страница валют", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TrackedPage" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "post": {
+        "tags": ["Tracking"], "summary": "Добавить валюту в отслеживание", "operationId": "addTracked",
+        "description": "ID должен присутствовать в локальном каталоге. Цена не загружается синхронно; её получит фоновая задача.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AddTrackedRequest" }, "example": { "id": 1 } } } },
+        "responses": {
+          "201": { "description": "Валюта добавлена", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AddedResponse" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" }, "413": { "$ref": "#/components/responses/PayloadTooLarge" }, "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "patch": {
+        "tags": ["Tracking"], "summary": "Приостановить или возобновить отслеживание", "operationId": "updateTracked",
+        "parameters": [{ "$ref": "#/components/parameters/TrackedId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateTrackedRequest" } } } },
+        "responses": {
+          "200": { "description": "Статус обновлён", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdatedResponse" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" }, "413": { "$ref": "#/components/responses/PayloadTooLarge" }, "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "delete": {
+        "tags": ["Tracking"], "summary": "Удалить из отслеживания", "operationId": "deleteTracked",
+        "description": "История цен сохраняется; валюту можно добавить повторно.", "parameters": [{ "$ref": "#/components/parameters/TrackedId" }],
+        "responses": { "204": { "description": "Запись удалена, тело отсутствует" }, "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" }, "500": { "$ref": "#/components/responses/InternalError" } }
+      }
+    },
+    "/v1/cryptocurrency/prices/latest": {
+      "get": {
+        "tags": ["Prices"], "summary": "Последние сохранённые цены", "operationId": "getLatestPrices",
+        "description": "Передайте ровно один из параметров id и slug. Возвращается последняя сохранённая цена в текущей QUOTE_CURRENCY или null. Доступна и для валют, удалённых из отслеживания.",
+        "parameters": [{ "$ref": "#/components/parameters/CurrencyIds" }, { "$ref": "#/components/parameters/CurrencySlugs" }],
+        "responses": {
+          "200": { "description": "Цены", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LatestResponse" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" }, "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/v1/cryptocurrency/prices/historical": {
+      "get": {
+        "tags": ["Prices"], "summary": "История сохранённых цен", "operationId": "getPriceHistory",
+        "description": "Передайте ровно один из id и slug. История включает все сохранённые валюты котировки. Порядок: время получения и внутренний ID по убыванию. Для следующей страницы передайте next_cursor с теми же валютами и границами времени. Снимок между запросами не фиксируется; total может измениться.",
+        "parameters": [
+          { "$ref": "#/components/parameters/CurrencyIds" }, { "$ref": "#/components/parameters/CurrencySlugs" },
+          { "name": "time_start", "in": "query", "description": "Включительная нижняя граница UTC с Z и не более чем тремя цифрами миллисекунд.", "schema": { "type": "string", "format": "date-time", "example": "2026-01-01T00:00:00Z" } },
+          { "name": "time_end", "in": "query", "description": "Включительная верхняя граница UTC с Z и не более чем тремя цифрами миллисекунд.", "schema": { "type": "string", "format": "date-time", "example": "2026-02-01T00:00:00Z" } },
+          { "name": "count", "in": "query", "description": "Максимум записей в ответе.", "schema": { "type": "integer", "minimum": 1, "maximum": 1000, "default": 100 } },
+          { "name": "cursor", "in": "query", "description": "Непрозрачный next_cursor предыдущей страницы. Привязан к валютам и диапазону времени; не является подписанным токеном.", "schema": { "type": "string", "maxLength": 4096 } }
+        ],
+        "responses": {
+          "200": { "description": "Страница истории", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HistoryResponse" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" }, "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": { "BearerAuth": { "type": "http", "scheme": "bearer", "description": "Секрет API_BEARER_TOKEN, не ключ CoinMarketCap." } },
+    "parameters": {
+      "TrackedId": { "name": "id", "in": "query", "required": true, "description": "CMC ID", "schema": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 } },
+      "CurrencyIds": { "name": "id", "in": "query", "description": "От 1 до 100 разных положительных CMC ID через запятую. Используйте либо id, либо slug.", "schema": { "type": "string", "example": "1,1027" } },
+      "CurrencySlugs": { "name": "slug", "in": "query", "description": "От 1 до 100 разных slug через запятую. Используйте либо slug, либо id.", "schema": { "type": "string", "example": "bitcoin,ethereum" } }
+    },
+    "responses": {
+      "BadRequest": { "description": "Некорректные параметры или тело запроса", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" }, "example": { "error": "Expected a positive integer id" } } } },
+      "Unauthorized": { "description": "Bearer token отсутствует или неверен", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" }, "example": { "error": "Unauthorized" } } } },
+      "NotFound": { "description": "Валюта или запись отслеживания не найдена", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "Conflict": { "description": "Валюта уже отслеживается или slug неоднозначен", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "PayloadTooLarge": { "description": "JSON-тело превышает 16 КБ", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "InternalError": { "description": "Внутренняя ошибка без раскрытия деталей", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" }, "example": { "error": "Internal server error" } } } }
+    },
+    "schemas": {
+      "Error": { "type": "object", "required": ["error"], "properties": { "error": { "type": "string" } } },
+      "HealthOk": { "type": "object", "required": ["status", "database"], "properties": { "status": { "type": "string", "enum": ["ok"] }, "database": { "type": "string", "enum": ["ok"] } } },
+      "HealthError": { "type": "object", "required": ["status", "database"], "properties": { "status": { "type": "string", "enum": ["error"] }, "database": { "type": "string", "enum": ["unavailable"] } } },
+      "Currency": { "type": "object", "required": ["id", "name", "symbol", "slug"], "properties": { "id": { "type": "integer", "example": 1 }, "name": { "type": "string", "example": "Bitcoin" }, "symbol": { "type": "string", "example": "BTC" }, "slug": { "type": "string", "example": "bitcoin" } } },
+      "TrackedCurrency": { "allOf": [{ "$ref": "#/components/schemas/Currency" }, { "type": "object", "required": ["is_active", "created_at", "updated_at", "last_synced_at"], "properties": { "is_active": { "type": "boolean" }, "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" }, "last_synced_at": { "type": "string", "format": "date-time", "nullable": true } } }] },
+      "TrackedPage": { "type": "object", "required": ["data", "pagination"], "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/TrackedCurrency" } }, "pagination": { "type": "object", "required": ["start", "limit", "total"], "properties": { "start": { "type": "integer" }, "limit": { "type": "integer" }, "total": { "type": "integer", "minimum": 0 } } } } },
+      "AddTrackedRequest": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 } } },
+      "UpdateTrackedRequest": { "type": "object", "additionalProperties": false, "required": ["is_active"], "properties": { "is_active": { "type": "boolean" } } },
+      "AddedResponse": { "type": "object", "required": ["data"], "properties": { "data": { "type": "object", "required": ["id"], "properties": { "id": { "type": "integer", "example": 1 } } } } },
+      "UpdatedResponse": { "type": "object", "required": ["data"], "properties": { "data": { "type": "object", "required": ["id", "is_active"], "properties": { "id": { "type": "integer" }, "is_active": { "type": "boolean" } } } } },
+      "PriceRecord": { "type": "object", "required": ["cryptocurrency_id", "price", "quote_currency", "fetched_at", "source_updated_at"], "properties": { "cryptocurrency_id": { "type": "integer", "example": 1 }, "price": { "type": "number", "format": "double", "minimum": 0, "description": "Приближённое число с плавающей точкой." }, "quote_currency": { "type": "string", "example": "USD" }, "fetched_at": { "type": "string", "format": "date-time" }, "source_updated_at": { "type": "string", "format": "date-time", "nullable": true } } },
+      "LatestCurrency": { "allOf": [{ "$ref": "#/components/schemas/Currency" }, { "type": "object", "required": ["price"], "properties": { "price": { "type": "object", "nullable": true, "required": ["cryptocurrency_id", "price", "quote_currency", "fetched_at", "source_updated_at"], "properties": { "cryptocurrency_id": { "type": "integer" }, "price": { "type": "number", "format": "double", "minimum": 0 }, "quote_currency": { "type": "string" }, "fetched_at": { "type": "string", "format": "date-time" }, "source_updated_at": { "type": "string", "format": "date-time", "nullable": true } } } } }] },
+      "LatestResponse": { "type": "object", "required": ["data"], "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/LatestCurrency" } } } },
+      "HistoryResponse": { "type": "object", "required": ["data", "meta"], "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/PriceRecord" } }, "meta": { "type": "object", "required": ["count", "total", "next_cursor"], "properties": { "count": { "type": "integer", "description": "Запрошенный лимит." }, "total": { "type": "integer", "minimum": 0, "description": "Количество записей по фильтрам до применения курсора и лимита." }, "next_cursor": { "type": "string", "nullable": true, "description": "Курсор следующей страницы или null в конце." } } } } }
+    }
+  }
+}

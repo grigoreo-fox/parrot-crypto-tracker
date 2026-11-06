@@ -6,6 +6,7 @@ import * as OpenApiValidator from 'express-openapi-validator';
 import request from 'supertest';
 import { createApp } from '../src/app';
 import { createTrackingRepository } from '../src/database/tracking-repository';
+import { createCatalogRepository } from '../src/catalog/catalog-repository';
 import { createPriceReader } from '../src/database/price-reader';
 import { openDatabase } from '../src/database/database';
 
@@ -15,7 +16,7 @@ describe('OpenAPI response contract', () => {
   const dir = mkdtempSync(join(tmpdir(), 'openapi-contract-'));
   const db = openDatabase(join(dir, 'test.sqlite'));
   const tracking = createTrackingRepository(db);
-  const api = createApp({ checkDatabase: () => {}, tracking: { apiToken: token, ...tracking }, prices: { apiToken: token, quoteCurrency: 'USD', reader: createPriceReader(db) } });
+  const api = createApp({ checkDatabase: () => {}, catalog: { apiToken: token, search: createCatalogRepository(db).search }, tracking: { apiToken: token, ...tracking }, prices: { apiToken: token, quoteCurrency: 'USD', reader: createPriceReader(db) } });
   const app = express();
   app.use(OpenApiValidator.middleware({ apiSpec: resolve(process.cwd(), 'openapi.json'), validateRequests: false, validateResponses: true }));
   app.use(api);
@@ -38,6 +39,9 @@ describe('OpenAPI response contract', () => {
   it('validates health and tracked CRUD responses, including errors', async () => {
     const auth = { Authorization: `Bearer ${token}` };
     expect((await request(app).get('/health')).status).toBe(200);
+    expect((await request(app).get('/v1/cryptocurrency/map?q=bitcoin').set(auth)).status).toBe(200);
+    expect((await request(app).get('/v1/cryptocurrency/map?q=').set(auth)).status).toBe(400);
+    expect((await request(app).get('/v1/cryptocurrency/map')).status).toBe(401);
     expect((await request(app).get('/v1/cryptocurrency/tracked')).status).toBe(401);
     expect((await request(app).post('/v1/cryptocurrency/tracked').set(auth).send({ id: 'bad' })).status).toBe(400);
     expect((await request(app).post('/v1/cryptocurrency/tracked').set(auth).send({ id: 999 })).status).toBe(404);

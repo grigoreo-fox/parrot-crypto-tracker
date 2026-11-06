@@ -62,6 +62,7 @@ npm start
 
 ```sh
 curl http://localhost:3000/health
+curl -H "Authorization: Bearer $TOKEN" 'http://localhost:3000/v1/cryptocurrency/map?q=bitcoin&limit=10'
 curl -X POST http://localhost:3000/v1/cryptocurrency/tracked \
   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"id":1}'
 curl -H "Authorization: Bearer $TOKEN" 'http://localhost:3000/v1/cryptocurrency/tracked?start=1&limit=10'
@@ -77,6 +78,6 @@ curl -H "Authorization: Bearer $TOKEN" 'http://localhost:3000/v1/cryptocurrency/
 - Цена хранится как SQLite `REAL` и возвращается числом с плавающей точкой: точные финансовые вычисления не гарантируются ([ADR 0001](./ADR/0001-price-representation.md)).
 - Инструменты проверки OpenAPI — дополнительные dev-зависимости. По `npm audit` у цепочки Redocly есть уязвимость `@faker-js/faker` в dev-зависимостях; валидируйте доверенные файлы, не используйте этот набор для обработки недоверенных спецификаций. `npm audit --omit=dev` уязвимостей не обнаружил на момент проверки.
 - `better-sqlite3` — дополнительный синхронный драйвер вне явного списка библиотек задания; обоснование и необходимость согласования — в [ADR 0002](./ADR/0002-sqlite-driver.md). Другие дополнительные зависимости описаны в `PRD.md`.
-- Поиск в каталоге через API, UI и Swagger UI сейчас не реализованы. При запуске сервера каталог обновляется автоматически, доступна также локальная команда `npm run sync:catalog`.
+- Поиск в каталоге доступен через `GET /v1/cryptocurrency/map`: необязательный `q` ищет буквальную подстроку в имени, символе и slug без учёта регистра ASCII. Без `q` возвращается весь каталог с пагинацией. UI и Swagger UI пока не реализованы.
 
 Архитектура и ограничения — в [`ARCHITECTURE.md`](./ARCHITECTURE.md), требования и проектные решения — в [`PRD.md`](./PRD.md), решения — в [`ADR/`](./ADR/). PRD включает и запланированные маршруты; реализованный контракт — в `openapi.json`.

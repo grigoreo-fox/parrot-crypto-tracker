@@ -16,5 +16,16 @@ export function createCatalogRepository(database: Database.Database) {
     for (const currency of currencies) upsert.run(currency);
   });
 
-  return { savePage };
+  const filter = "WHERE (? IS NULL OR name LIKE ? ESCAPE '\\' OR symbol LIKE ? ESCAPE '\\' OR slug LIKE ? ESCAPE '\\')";
+  const searchRows = database.prepare(`SELECT id, name, symbol, slug FROM cryptocurrencies ${filter} ORDER BY id LIMIT ? OFFSET ?`);
+  const countRows = database.prepare(`SELECT COUNT(*) AS total FROM cryptocurrencies ${filter}`);
+  const search = database.transaction((query: string | null, start: number, limit: number) => {
+    const pattern = query === null ? null : `%${query.replace(/[\\%_]/g, '\\$&')}%`;
+    const params = [pattern, pattern, pattern, pattern];
+    const data = searchRows.all(...params, limit, start - 1) as CatalogCurrency[];
+    const { total } = countRows.get(...params) as { total: number };
+    return { data, pagination: { start, limit, total } };
+  });
+
+  return { savePage, search };
 }

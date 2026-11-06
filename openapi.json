@@ -9,6 +9,21 @@
   "security": [{ "BearerAuth": [] }],
   "tags": [{ "name": "Health", "description": "Проверка доступности" }, { "name": "Tracking", "description": "Управление отслеживаемыми валютами" }, { "name": "Prices", "description": "Сохранённые цены и история" }],
   "paths": {
+    "/v1/cryptocurrency/map": {
+      "get": {
+        "tags": ["Tracking"], "summary": "Поиск по локальному каталогу", "operationId": "searchCatalog",
+        "description": "Без q возвращается весь каталог; q ищет буквальную подстроку по имени, символу и slug без учёта регистра ASCII. Результаты сортируются по CMC ID.",
+        "parameters": [
+          { "name": "q", "in": "query", "description": "Поисковая строка после удаления пробелов по краям, от 1 до 100 символов.", "schema": { "type": "string", "minLength": 1, "maxLength": 100 } },
+          { "name": "start", "in": "query", "description": "Позиция с 1.", "schema": { "type": "integer", "minimum": 1, "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 100 } }
+        ],
+        "responses": {
+          "200": { "description": "Страница каталога", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CatalogPage" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": ["Health"], "summary": "Проверка приложения и БД", "operationId": "getHealth", "security": [],
@@ -105,6 +120,7 @@
       "HealthError": { "type": "object", "required": ["status", "database"], "properties": { "status": { "type": "string", "enum": ["error"] }, "database": { "type": "string", "enum": ["unavailable"] } } },
       "Currency": { "type": "object", "required": ["id", "name", "symbol", "slug"], "properties": { "id": { "type": "integer", "example": 1 }, "name": { "type": "string", "example": "Bitcoin" }, "symbol": { "type": "string", "example": "BTC" }, "slug": { "type": "string", "example": "bitcoin" } } },
       "TrackedCurrency": { "allOf": [{ "$ref": "#/components/schemas/Currency" }, { "type": "object", "required": ["is_active", "created_at", "updated_at", "last_synced_at"], "properties": { "is_active": { "type": "boolean" }, "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" }, "last_synced_at": { "type": "string", "format": "date-time", "nullable": true } } }] },
+      "CatalogPage": { "type": "object", "required": ["data", "pagination"], "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Currency" } }, "pagination": { "type": "object", "required": ["start", "limit", "total"], "properties": { "start": { "type": "integer" }, "limit": { "type": "integer" }, "total": { "type": "integer", "minimum": 0 } } } } },
       "TrackedPage": { "type": "object", "required": ["data", "pagination"], "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/TrackedCurrency" } }, "pagination": { "type": "object", "required": ["start", "limit", "total"], "properties": { "start": { "type": "integer" }, "limit": { "type": "integer" }, "total": { "type": "integer", "minimum": 0 } } } } },
       "AddTrackedRequest": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 } } },
       "UpdateTrackedRequest": { "type": "object", "additionalProperties": false, "required": ["is_active"], "properties": { "is_active": { "type": "boolean" } } },

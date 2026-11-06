@@ -21,10 +21,12 @@ try {
   const tracking = createTrackingRepository(db);
   const cmc = createCmcClient({ apiKey: config.cmcApiKey, quoteCurrency: config.quoteCurrency });
   const priceSync = createPriceSync(cmc, tracking, logger, config.priceSyncIntervalMs);
-  const catalogSync = createCatalogScheduler(cmc, createCatalogRepository(db), logger, config.catalogSyncIntervalMs);
+  const catalog = createCatalogRepository(db);
+  const catalogSync = createCatalogScheduler(cmc, catalog, logger, config.catalogSyncIntervalMs);
   const app = createApp({
     checkDatabase: () => { healthQuery.get(); },
     tracking: { apiToken: config.apiToken, ...tracking },
+    catalog: { apiToken: config.apiToken, search: catalog.search },
     prices: { apiToken: config.apiToken, quoteCurrency: config.quoteCurrency, reader: createPriceReader(db) },
   });
   const server = app.listen(config.port, () => {

@@ -17,6 +17,7 @@ interface TrackedCurrency {
 export interface HealthDependencies {
   checkDatabase(): void;
   prices?: { apiToken: string; quoteCurrency: string; reader: PriceReader };
+  catalog?: { apiToken: string; search(query: string | null, start: number, limit: number): { data: Array<{ id: number; name: string; symbol: string; slug: string }>; pagination: { start: number; limit: number; total: number } } };
   tracking?: {
     apiToken: string;
     addTracked(id: number): 'created' | 'not_found' | 'conflict';
@@ -44,6 +45,20 @@ export function createApp(dependencies: HealthDependencies): express.Express {
       response.status(503).json({ status: 'error', database: 'unavailable' });
     }
   });
+
+  if (dependencies.catalog) {
+    const catalog = dependencies.catalog;
+    app.get('/v1/cryptocurrency/map', bearerAuth(catalog.apiToken), (request, response) => {
+      const start = positiveInteger(request.query.start ?? '1');
+      const limit = positiveInteger(request.query.limit ?? '100');
+      const query = request.query.q;
+      if (start === undefined || limit === undefined || limit > 100 || (query !== undefined && (typeof query !== 'string' || !query.trim() || query.trim().length > 100))) {
+        response.status(400).json({ error: 'Expected start >= 1, limit between 1 and 100, and optional q of 1 to 100 characters' });
+        return;
+      }
+      response.json(catalog.search(typeof query === 'string' ? query.trim() : null, start, limit));
+    });
+  }
 
   if (dependencies.tracking) {
     const tracking = dependencies.tracking;

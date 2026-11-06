@@ -1,5 +1,7 @@
 import type Database from 'better-sqlite3';
 import { createApp } from './app';
+import { createCatalogRepository } from './catalog/catalog-repository';
+import { createCatalogScheduler } from './catalog/catalog-scheduler';
 import { createCmcClient } from './cmc/client';
 import { loadServerConfig } from './config/server-config';
 import { openDatabase } from './database/database';
@@ -19,6 +21,7 @@ try {
   const tracking = createTrackingRepository(db);
   const cmc = createCmcClient({ apiKey: config.cmcApiKey, quoteCurrency: config.quoteCurrency });
   const priceSync = createPriceSync(cmc, tracking, logger, config.priceSyncIntervalMs);
+  const catalogSync = createCatalogScheduler(cmc, createCatalogRepository(db), logger, config.catalogSyncIntervalMs);
   const app = createApp({
     checkDatabase: () => { healthQuery.get(); },
     tracking: { apiToken: config.apiToken, ...tracking },
@@ -26,9 +29,12 @@ try {
   });
   const server = app.listen(config.port, () => {
     logger.info('HTTP server started', { port: config.port });
+    catalogSync.start();
     priceSync.start();
   });
-  const shutdown = createShutdown(server, db, logger, priceSync.stop);
+  const shutdown = createShutdown(server, db, logger, async () => {
+    await Promise.all([priceSync.stop(), catalogSync.stop()]);
+  });
   server.on('error', (error) => {
     logger.error('HTTP server error', { error: error.message });
     void shutdown(1);

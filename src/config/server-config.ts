@@ -8,10 +8,15 @@ export function loadServerConfig() {
   if (!cmcApiKey || /\s/.test(cmcApiKey)) throw new Error('CMC_PRO_API_KEY must not be empty or contain whitespace');
   const quoteCurrency = (process.env.QUOTE_CURRENCY ?? 'USD').trim().toUpperCase();
   if (!/^[A-Z0-9]+$/.test(quoteCurrency)) throw new Error('QUOTE_CURRENCY must be an alphanumeric currency symbol');
-  const intervalText = process.env.PRICE_SYNC_INTERVAL_MS ?? '300000';
-  const priceSyncIntervalMs = Number(intervalText);
-  if (!/^\d+$/.test(intervalText) || !Number.isSafeInteger(priceSyncIntervalMs) || priceSyncIntervalMs < 1 || priceSyncIntervalMs > 2147483647) {
-    throw new Error('PRICE_SYNC_INTERVAL_MS must be an integer between 1 and 2147483647');
-  }
-  return { ...base, apiToken, cmcApiKey, quoteCurrency, priceSyncIntervalMs };
+  const intervalMs = (name: string, defaultMinutes: string): number => {
+    const text = process.env[name] ?? defaultMinutes;
+    const minutes = Number(text);
+    if (!/^\d+$/.test(text) || !Number.isSafeInteger(minutes) || minutes < 1 || minutes > 35791) {
+      throw new Error(`${name} must be an integer between 1 and 35791 minutes`);
+    }
+    return minutes * 60000;
+  };
+  const priceSyncIntervalMs = intervalMs('PRICE_SYNC_INTERVAL_MINUTES', '5');
+  const catalogSyncIntervalMs = intervalMs('CATALOG_SYNC_INTERVAL_MINUTES', '1440');
+  return { ...base, apiToken, cmcApiKey, quoteCurrency, priceSyncIntervalMs, catalogSyncIntervalMs };
 }

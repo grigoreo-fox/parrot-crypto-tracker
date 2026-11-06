@@ -1,0 +1,22 @@
+services:
+  app:
+    build: .
+    init: true
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-3000}:3000"
+    environment:
+      PORT: 3000
+      DATABASE_PATH: /data/data.sqlite
+      CMC_PRO_API_KEY: ${CMC_PRO_API_KEY:?Set CMC_PRO_API_KEY in .env or the environment}
+      API_BEARER_TOKEN: ${API_BEARER_TOKEN:?Set API_BEARER_TOKEN in .env or the environment}
+      QUOTE_CURRENCY: ${QUOTE_CURRENCY:-USD}
+      PRICE_SYNC_INTERVAL_MINUTES: ${PRICE_SYNC_INTERVAL_MINUTES:-5}
+      CATALOG_SYNC_INTERVAL_MINUTES: ${CATALOG_SYNC_INTERVAL_MINUTES:-1440}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - sqlite-data:/data
+    stop_grace_period: 15s
+
+volumes:
+  sqlite-data:

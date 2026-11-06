@@ -80,7 +80,7 @@
 | `GET /v1/cryptocurrency/prices/latest?id=[]` или `?slug=[]` | Актуальные цены |
 | `GET /v1/cryptocurrency/prices/historical?id=[]` или `?slug=[]` с `time_start`, `time_end`, `count`, `cursor` | Собранная сервисом история цен |
 | `GET /health` | Мониторинг и Docker healthcheck |
-| `GET /` | План: одностраничный UI, пока не реализован |
+| `GET /` | Одностраничный UI: поиск, отслеживание, текущие цены и история |
 
 **[Решение]** `id` — CMC ID; списки передаются через запятую (`?id=1,1027` или `?slug=bitcoin,ethereum`). Одновременно передавать `id` и `slug` нельзя; ошибка валидации — `400`.
 

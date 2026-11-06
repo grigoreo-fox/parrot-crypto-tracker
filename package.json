@@ -9,7 +9,7 @@
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "npm run clean && tsc -p tsconfig.json && npm run copy:sql && npm run copy:docs",
     "copy:sql": "node -e \"require('node:fs').cpSync('src/database/migrations', 'dist/src/database/migrations', { recursive: true })\"",
-    "copy:docs": "node -e \"const fs=require('node:fs'); fs.cpSync('src/docs', 'dist/src/docs', { recursive: true }); fs.copyFileSync('openapi.json', 'dist/src/openapi.json')\"",
+    "copy:docs": "node -e \"const fs=require('node:fs'); fs.cpSync('src/docs', 'dist/src/docs', { recursive: true }); fs.cpSync('src/ui', 'dist/src/ui', { recursive: true }); fs.copyFileSync('openapi.json', 'dist/src/openapi.json')\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "validate:openapi": "redocly lint openapi.json",
     "start": "node dist/src/server.js",

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Parrot Crypto Tracker</title>
+  <link rel="stylesheet" href="/ui/style.css">
+  <script src="/ui/app.js" defer></script>
+</head>
+<body>
+  <header><h1>Parrot Crypto Tracker</h1><a href="/docs">API документация</a></header>
+  <main>
+    <section class="panel auth"><div><h2>Доступ к API</h2><p>Токен хранится только в памяти страницы и исчезнет после перезагрузки.</p></div><form id="auth-form"><label for="token">Bearer token</label><div class="inline"><input id="token" type="password" autocomplete="off" required minlength="32" placeholder="Введите токен API"><button>Подключить</button></div></form></section>
+    <p id="notice" role="status" aria-live="polite">Введите токен для работы с данными.</p>
+    <div class="grid">
+      <section class="panel"><div class="section-title"><div><p class="eyebrow">01 / КАТАЛОГ</p><h2>Найти валюту</h2></div></div><form id="search-form" class="inline"><label class="sr-only" for="query">Название, символ или slug</label><input id="query" maxlength="100" placeholder="Bitcoin, BTC…"><button>Найти</button></form><p class="hint">Пустой запрос покажет каталог. Начальная загрузка может занять время.</p><div id="catalog" class="list"></div><div class="pager"><button id="catalog-prev" class="secondary" type="button">← Назад</button><span id="catalog-page"></span><button id="catalog-next" class="secondary" type="button">Далее →</button></div></section>
+      <section class="panel"><div class="section-title"><div><p class="eyebrow">02 / СПИСОК</p><h2>Отслеживаемые</h2></div><button id="refresh" class="secondary" type="button">Обновить</button></div><p class="hint">Цены обновляются фоново; после добавления цена может появиться не сразу.</p><div id="tracked" class="list"></div><div class="pager"><button id="tracked-prev" class="secondary" type="button">← Назад</button><span id="tracked-page"></span><button id="tracked-next" class="secondary" type="button">Далее →</button></div></section>
+    </div>
+    <section class="panel history"><div class="section-title"><div><p class="eyebrow">03 / ИСТОРИЯ</p><h2 id="history-title">История цен</h2></div></div><p id="history-message" class="hint">Выберите «История» у отслеживаемой валюты.</p><canvas id="chart" width="1000" height="240" aria-label="График цен" role="img" hidden></canvas><div id="history-list" class="history-list"></div><button id="more" class="secondary" type="button" hidden>Загрузить ещё</button></section>
+  </main><footer>Данные CoinMarketCap · Цены приблизительны · <a href="/docs">API</a></footer>
+</body>
+</html>

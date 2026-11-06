@@ -42,6 +42,9 @@ export function createApp(dependencies: HealthDependencies): express.Express {
   const swaggerAssets = dirname(require.resolve('swagger-ui-dist/package.json'));
   const bundledSpec = join(__dirname, 'openapi.json');
   const specPath = existsSync(bundledSpec) ? bundledSpec : resolve(__dirname, '../openapi.json');
+  app.get('/', (_request, response) => response.sendFile(join(__dirname, 'ui', 'index.html')));
+  app.get('/ui/app.js', (_request, response) => response.sendFile(join(__dirname, 'ui', 'app.js')));
+  app.get('/ui/style.css', (_request, response) => response.sendFile(join(__dirname, 'ui', 'style.css')));
   app.get('/docs', (_request, response) => response.sendFile(join(__dirname, 'docs', 'index.html')));
   app.get('/docs/openapi.json', (_request, response) => response.sendFile(specPath));
   app.get('/docs/init.js', (_request, response) => response.sendFile(join(__dirname, 'docs', 'init.js')));

@@ -20,7 +20,7 @@ export interface HealthDependencies {
   tracking?: {
     apiToken: string;
     addTracked(id: number): 'created' | 'not_found' | 'conflict';
-    listTracked(start: number, limit: number): TrackedCurrency[];
+    listTracked(start: number, limit: number): { data: TrackedCurrency[]; pagination: { start: number; limit: number; total: number } };
     setTrackedActive(id: number, isActive: boolean): boolean;
     deleteTracked(id: number): boolean;
   };
@@ -56,7 +56,7 @@ export function createApp(dependencies: HealthDependencies): express.Express {
         response.status(400).json({ error: 'Expected start >= 1 and limit between 1 and 100' });
         return;
       }
-      response.json({ data: tracking.listTracked(start, limit) });
+      response.json(tracking.listTracked(start, limit));
     });
     router.post('/', express.json({ limit: '16kb' }), (request, response) => {
       const body: unknown = request.body;

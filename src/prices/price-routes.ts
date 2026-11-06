@@ -1,6 +1,7 @@
 import { Router, type Request } from 'express';
 import type { PriceCurrency, PriceReader } from '../database/price-reader';
 import { bearerAuth } from '../auth';
+import { decodeHistoryCursor } from './history-cursor';
 
 const MAX_CURRENCIES = 100;
 
@@ -72,7 +73,13 @@ export function createPriceRouter(reader: PriceReader, token: string, quoteCurre
       response.status(400).json({ error: 'Invalid time range or count (1 to 1000)' });
       return;
     }
-    response.json({ data: reader.history(selected.currencies.map((currency) => currency.id), start, end, count) });
+    const ids = selected.currencies.map((currency) => currency.id);
+    const cursor = request.query.cursor === undefined ? null : decodeHistoryCursor(request.query.cursor, { ids, start, end });
+    if (cursor === undefined) {
+      response.status(400).json({ error: 'Invalid cursor or cursor does not match filters' });
+      return;
+    }
+    response.json(reader.history(ids, start, end, count, cursor));
   });
   return router;
 }

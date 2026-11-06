@@ -37,6 +37,12 @@ describe('tracked currency', () => {
     const result = await get('?start=2&limit=1');
     expect(result.status).toBe(200);
     expect(result.body.data).toEqual([expect.objectContaining({ id: 2, name: 'Ethereum', symbol: 'ETH', is_active: true, last_synced_at: null })]);
+    expect(result.body.pagination).toEqual({ start: 2, limit: 1, total: 2 });
+    const beyond = await get('?start=3&limit=1');
+    expect(beyond.body).toEqual({ data: [], pagination: { start: 3, limit: 1, total: 2 } });
+    repository.deleteTracked(1);
+    repository.deleteTracked(2);
+    expect((await get('')).body).toEqual({ data: [], pagination: { start: 1, limit: 100, total: 0 } });
     expect((await get('?start=0')).status).toBe(400);
     expect((await get('?limit=101')).status).toBe(400);
     expect((await get('?start=1&start=2')).status).toBe(400);

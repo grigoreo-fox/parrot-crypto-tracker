@@ -7,8 +7,9 @@
   },
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
-    "build": "npm run clean && tsc -p tsconfig.json && npm run copy:sql",
+    "build": "npm run clean && tsc -p tsconfig.json && npm run copy:sql && npm run copy:docs",
     "copy:sql": "node -e \"require('node:fs').cpSync('src/database/migrations', 'dist/src/database/migrations', { recursive: true })\"",
+    "copy:docs": "node -e \"const fs=require('node:fs'); fs.cpSync('src/docs', 'dist/src/docs', { recursive: true }); fs.copyFileSync('openapi.json', 'dist/src/openapi.json')\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "validate:openapi": "redocly lint openapi.json",
     "start": "node dist/src/server.js",
@@ -33,6 +34,7 @@
     "axios": "1.21.0",
     "better-sqlite3": "11.10.0",
     "dotenv": "16.6.1",
-    "express": "4.22.3"
+    "express": "4.22.3",
+    "swagger-ui-dist": "5.34.1"
   }
 }

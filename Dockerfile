@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3 make g+
     && rm -rf /var/lib/apt/lists/*
 COPY package*.json ./
 RUN npm ci
-COPY tsconfig.json jest.config.cjs ./
+COPY tsconfig.json jest.config.cjs openapi.json ./
 COPY src ./src
 COPY tests ./tests
 RUN npm run build && npm prune --omit=dev

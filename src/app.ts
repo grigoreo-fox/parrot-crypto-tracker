@@ -1,4 +1,6 @@
 import express, { type ErrorRequestHandler } from 'express';
+import { existsSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { bearerAuth } from './auth';
 import { createPriceRouter } from './prices/price-routes';
 import type { PriceReader } from './database/price-reader';
@@ -36,6 +38,15 @@ function positiveInteger(value: unknown): number | undefined {
 /** Creates an HTTP application without opening a network port. */
 export function createApp(dependencies: HealthDependencies): express.Express {
   const app = express();
+
+  const swaggerAssets = dirname(require.resolve('swagger-ui-dist/package.json'));
+  const bundledSpec = join(__dirname, 'openapi.json');
+  const specPath = existsSync(bundledSpec) ? bundledSpec : resolve(__dirname, '../openapi.json');
+  app.get('/docs', (_request, response) => response.sendFile(join(__dirname, 'docs', 'index.html')));
+  app.get('/docs/openapi.json', (_request, response) => response.sendFile(specPath));
+  app.get('/docs/init.js', (_request, response) => response.sendFile(join(__dirname, 'docs', 'init.js')));
+  app.get('/docs/swagger-ui.css', (_request, response) => response.sendFile(join(swaggerAssets, 'swagger-ui.css')));
+  app.get('/docs/swagger-ui-bundle.js', (_request, response) => response.sendFile(join(swaggerAssets, 'swagger-ui-bundle.js')));
 
   app.get('/health', (_request, response) => {
     try {

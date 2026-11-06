@@ -24,6 +24,15 @@ describe('catalog synchronization and repository', () => {
     expect(db.prepare('SELECT COUNT(*) AS count FROM cryptocurrencies').get()).toEqual({ count: 101 });
   });
 
+  it('reports no update time for an empty catalog and the newest time after saving', () => {
+    expect(repository.latestUpdatedAt()).toBeNull();
+    repository.savePage([currency(1)]);
+    const first = repository.latestUpdatedAt();
+    expect(first).toEqual(expect.any(String));
+    repository.savePage([{ ...currency(1), name: 'Updated' }]);
+    expect(Date.parse(repository.latestUpdatedAt() ?? '')).toBeGreaterThanOrEqual(Date.parse(first ?? ''));
+  });
+
   it('rolls back an entire page when one row violates a constraint', () => {
     expect(() => repository.savePage([currency(1), { ...currency(2), name: '' }])).toThrow();
     expect(db.prepare('SELECT COUNT(*) AS count FROM cryptocurrencies').get()).toEqual({ count: 0 });

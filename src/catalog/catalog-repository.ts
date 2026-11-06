@@ -19,6 +19,7 @@ export function createCatalogRepository(database: Database.Database) {
   const filter = "WHERE (? IS NULL OR name LIKE ? ESCAPE '\\' OR symbol LIKE ? ESCAPE '\\' OR slug LIKE ? ESCAPE '\\')";
   const searchRows = database.prepare(`SELECT id, name, symbol, slug FROM cryptocurrencies ${filter} ORDER BY id LIMIT ? OFFSET ?`);
   const countRows = database.prepare(`SELECT COUNT(*) AS total FROM cryptocurrencies ${filter}`);
+  const latestUpdatedAtQuery = database.prepare('SELECT MAX(catalog_updated_at) AS updated_at FROM cryptocurrencies');
   const search = database.transaction((query: string | null, start: number, limit: number) => {
     const pattern = query === null ? null : `%${query.replace(/[\\%_]/g, '\\$&')}%`;
     const params = [pattern, pattern, pattern, pattern];
@@ -27,5 +28,9 @@ export function createCatalogRepository(database: Database.Database) {
     return { data, pagination: { start, limit, total } };
   });
 
-  return { savePage, search };
+  return {
+    savePage,
+    search,
+    latestUpdatedAt: (): string | null => (latestUpdatedAtQuery.get() as { updated_at: string | null }).updated_at,
+  };
 }

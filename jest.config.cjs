@@ -4,5 +4,5 @@ module.exports = {
   roots: ['<rootDir>/dist'],
   testMatch: ['**/*.test.js'],
   collectCoverageFrom: ['<rootDir>/dist/src/**/*.js'],
-  coverageReporters: ['text', 'html', 'lcov'],
+  coverageReporters: ['text', 'html', 'lcov', 'json-summary'],
 };

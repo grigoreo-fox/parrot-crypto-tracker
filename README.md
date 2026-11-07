@@ -1,6 +1,7 @@
 # Parrot Crypto Tracker
 
 [![CI](https://github.com/grigoreo-fox/parrot-crypto-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/grigoreo-fox/parrot-crypto-tracker/actions/workflows/ci.yml)
+[![Coverage](https://grigoreo-fox.github.io/parrot-crypto-tracker/coverage.svg)](https://github.com/grigoreo-fox/parrot-crypto-tracker/actions/workflows/ci.yml)
 
 REST API для отслеживания криптовалют и сохранения истории цен через CoinMarketCap.
 

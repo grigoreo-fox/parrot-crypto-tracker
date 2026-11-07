@@ -6,7 +6,7 @@ import { join, resolve } from 'node:path';
 describe('server configuration', () => {
   const directory = mkdtempSync(join(tmpdir(), 'server-config-'));
   const modulePath = resolve(__dirname, '../src/config/server-config.js');
-  const read = (env: NodeJS.ProcessEnv) => spawnSync(process.execPath, ['-e', `try { const c = require(${JSON.stringify(modulePath)}).loadServerConfig(); console.log(JSON.stringify({interval:c.priceSyncIntervalMs,catalogInterval:c.catalogSyncIntervalMs,currency:c.quoteCurrency})); } catch(e) { console.error(e.message); process.exitCode=1; }`], { cwd: directory, env, encoding: 'utf8' });
+  const read = (env: NodeJS.ProcessEnv) => spawnSync(process.execPath, ['-e', `try { const c = require(${JSON.stringify(modulePath)}).loadServerConfig(); console.log(JSON.stringify({interval:c.priceSyncIntervalMs,catalogInterval:c.catalogSyncIntervalMs,currency:c.quoteCurrency})); } catch(e) { console.error(e.message); process.exitCode=1; }`], { cwd: directory, env: { ...env, NODE_V8_COVERAGE: process.env.NODE_V8_COVERAGE }, encoding: 'utf8' });
   const valid = { API_BEARER_TOKEN: 'x'.repeat(32), CMC_PRO_API_KEY: 'test' };
   afterAll(() => rmSync(directory, { recursive: true, force: true }));
   it('defaults to five minutes and USD', () => {

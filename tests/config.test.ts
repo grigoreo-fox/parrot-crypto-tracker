@@ -33,7 +33,7 @@ describe('application configuration', () => {
       const modulePath = resolve(__dirname, '../src/config/config.js');
       const result = spawnSync(process.execPath, ['-e',
         `console.log(JSON.stringify(require(${JSON.stringify(modulePath)}).loadConfig()))`,
-      ], { cwd: directory, env: { PORT: '5000' }, encoding: 'utf8' });
+      ], { cwd: directory, env: { PORT: '5000', NODE_V8_COVERAGE: process.env.NODE_V8_COVERAGE }, encoding: 'utf8' });
       expect(result.status).toBe(0);
       expect(JSON.parse(result.stdout)).toEqual({
         port: 5000, databasePath: './data.sqlite', logLevel: 'debug',

@@ -122,6 +122,47 @@ describe('CMC client', () => {
     await expect(setup(adapter).map(1, 1)).rejects.toMatchObject({ kind: 'internal', message: 'CoinMarketCap internal error' });
   });
 
+  it.each([403, 404, 408, 500])('classifies HTTP %i without leaking response details', async (status) => {
+    const adapter = jest.fn<ReturnType<AxiosAdapter>, Parameters<AxiosAdapter>>(async (config) => {
+      throw new AxiosError('test-secret', 'ERR_BAD_RESPONSE', config, undefined, { data: { secret: 'test-secret' }, status, statusText: '', headers: new AxiosHeaders(), config });
+    });
+    const kind = status === 403 ? 'authentication' : 'http';
+    await expect(setup(adapter).map(1, 1)).rejects.toMatchObject({ kind, status, message: `CoinMarketCap ${kind} error (HTTP ${status})` });
+    expect(adapter).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not call the transport when already cancelled', async () => {
+    const adapter = jest.fn<ReturnType<AxiosAdapter>, Parameters<AxiosAdapter>>();
+    const controller = new AbortController();
+    controller.abort();
+    await expect(setup(adapter).map(1, 1, controller.signal)).rejects.toMatchObject({ kind: 'cancelled' });
+    expect(adapter).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['missing', undefined, 0],
+    ['empty', '', 0],
+    ['invalid', 'not-a-date', 0],
+    ['too long', '9', 0],
+    ['monthly quota', '0', 1010],
+  ])('does not retry rate limits with %s Retry-After', async (_description, retryAfter, code) => {
+    const adapter = jest.fn<ReturnType<AxiosAdapter>, Parameters<AxiosAdapter>>(async (config) => {
+      const headers = new AxiosHeaders();
+      if (retryAfter !== undefined) headers.set('retry-after', retryAfter);
+      throw new AxiosError('limited', 'ERR_BAD_REQUEST', config, undefined, { data: { status: { error_code: code } }, status: 429, statusText: '', headers, config });
+    });
+    await expect(setup(adapter, 2).map(1, 1)).rejects.toMatchObject({ kind: 'rate_limit', status: 429 });
+    expect(adapter).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['0', 'Thu, 01 Jan 1970 00:00:00 GMT'])('retries rate limits with a valid Retry-After %s', async (retryAfter) => {
+    const adapter = jest.fn<ReturnType<AxiosAdapter>, Parameters<AxiosAdapter>>()
+      .mockImplementationOnce(async (config) => { throw new AxiosError('limited', 'ERR_BAD_REQUEST', config, undefined, { data: {}, status: 429, statusText: '', headers: new AxiosHeaders({ 'retry-after': retryAfter }), config }); })
+      .mockImplementationOnce(async (config) => ({ data: { data: [] }, status: 200, statusText: 'OK', headers: {}, config }));
+    await expect(setup(adapter, 1).map(1, 1)).resolves.toEqual([]);
+    expect(adapter).toHaveBeenCalledTimes(2);
+  });
+
   it('limits retry configuration and makes at most three retries', async () => {
     const adapter = jest.fn<ReturnType<AxiosAdapter>, Parameters<AxiosAdapter>>(async (config) => { throw new AxiosError('network', 'ECONNRESET', config); });
     expect(() => setup(adapter, 4)).toThrow('Invalid CMC timeout or retry count');

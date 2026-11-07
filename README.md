@@ -1,5 +1,7 @@
 # Parrot Crypto Tracker
 
+[![CI](https://github.com/grigoreo-fox/parrot-crypto-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/grigoreo-fox/parrot-crypto-tracker/actions/workflows/ci.yml)
+
 REST API для отслеживания криптовалют и сохранения истории цен через CoinMarketCap.
 
 ## Запуск через Docker Compose
@@ -32,11 +34,14 @@ REST API для отслеживания криптовалют и сохран�
 npm ci
 npm run validate:openapi
 npm test
+npm run test:coverage
 npm run build
 npm start
 ```
 
 Для локального запуска заполните `.env`; можно вручную обновить каталог командой `npm run sync:catalog`. Совместимость полного набора зависимостей с Node.js 18 ещё требует отдельной проверки.
+
+`npm run test:coverage` выводит покрытие в терминал и создаёт HTML-отчёт `coverage/lcov-report/index.html`. GitHub Actions запускает проверку типов, OpenAPI и тесты с покрытием при каждом push и pull request; отчёт доступен в артефакте `coverage-report` соответствующего запуска.
 
 ## Конфигурация
 

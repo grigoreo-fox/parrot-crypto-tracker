@@ -15,7 +15,8 @@
     "start": "node dist/src/server.js",
     "dev": "tsx watch src/server.ts",
     "sync:catalog": "npm run build && node dist/src/sync-catalog-cli.js",
-    "test": "npm run build && jest --runInBand"
+    "test": "npm run build && jest --runInBand",
+    "test:coverage": "npm run build && jest --runInBand --coverage"
   },
   "devDependencies": {
     "@redocly/cli": "1.34.24",
